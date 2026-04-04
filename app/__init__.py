@@ -1,23 +1,26 @@
+from flask import Flask
 from dotenv import load_dotenv
-from flask import Flask, jsonify
 
-from app.database import init_db
+from app.config import Config
+from app.database import init_db_with_flask
 from app.routes import register_routes
 
 
 def create_app():
+    # ✅ Load .env
     load_dotenv()
 
     app = Flask(__name__)
+    app.config.from_object(Config)
 
-    init_db(app)
+    # Init DB
+    init_db_with_flask(app)
 
-    from app import models  # noqa: F401 - registers models with Peewee
-
+    # Routes
     register_routes(app)
 
     @app.route("/health")
     def health():
-        return jsonify(status="ok")
+        return {"status": "ok"}
 
     return app
