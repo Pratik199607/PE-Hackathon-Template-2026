@@ -1,192 +1,208 @@
-# MLH PE Hackathon — Flask + Peewee + PostgreSQL Template
+# 🚨 MLH Hackathon – Incident Response & Documentation
 
-A minimal hackathon starter template. You get the scaffolding and database wiring — you build the models, routes, and CSV loading logic.
+This repository contains a simple backend application setup for the **MLH Production Engineering Hackathon** challenge focused on **Incident Response & Documentation**.
 
-**Stack:** Flask · Peewee ORM · PostgreSQL · uv
+## 🛠️ Tech Stack
 
-## **Important**
+- Python 3.13
+- PostgreSQL 15
+- Podman (Container Engine)
+- uv (Python package manager)
 
-You need to work with around the seed files that you can find in [MLH PE Hackathon](https://mlh-pe-hackathon.com) platform. This will help you build the schema for the database and have some data to do some testing and submit your project for judging. If you need help with this, reach out on Discord or on the Q&A tab on the platform.
+---
 
-## Prerequisites
+## 📂 Project Structure
 
-- **uv** — a fast Python package manager that handles Python versions, virtual environments, and dependencies automatically.
-  Install it with:
-  ```bash
-  # macOS / Linux
-  curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+.
+├── README.md
+├── app
+│   ├── config.py
+│   ├── database.py
+│   ├── models
+│   │   └── product.py
+│   └── routes
+│       └── products.py
+├── products.csv
+├── pyproject.toml
+├── run.py
+├── scripts
+│   ├── init_db.py
+│   └── load_csv.py
+└── uv.lock
+```
 
-  # Windows (PowerShell)
-  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-  ```
-  For other methods see the [uv installation docs](https://docs.astral.sh/uv/getting-started/installation/).
-- PostgreSQL running locally (you can use Docker or a local instance)
+---
 
-## uv Basics
+## ⚙️ Prerequisites Setup
 
-`uv` manages your Python version, virtual environment, and dependencies automatically — no manual `python -m venv` needed.
-
-| Command | What it does |
-|---------|--------------|
-| `uv sync` | Install all dependencies (creates `.venv` automatically) |
-| `uv run <script>` | Run a script using the project's virtual environment |
-| `uv add <package>` | Add a new dependency |
-| `uv remove <package>` | Remove a dependency |
-
-## Quick Start
+### 1. Install `uv` (Python Package Manager)
 
 ```bash
-# 1. Clone the repo
-git clone <repo-url> && cd mlh-pe-hackathon
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-# 2. Install dependencies
+Reload shell:
+
+```bash
+source ~/.bashrc
+```
+
+Verify installation:
+
+```bash
+uv --version
+```
+
+---
+
+### 2. Install Podman
+
+```bash
+sudo apt install podman -y
+```
+
+Verify:
+
+```bash
+podman --version
+```
+
+---
+
+### 3. Pull PostgreSQL Image
+
+```bash
+podman pull docker.io/library/postgres:15
+```
+
+Verify images:
+
+```bash
+podman images
+```
+
+---
+
+### 4. Run PostgreSQL Container
+
+```bash
+podman run -d \
+  --name postgres-hackathon \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=hackathon_db \
+  -p 5432:5432 \
+  -v postgres_data:/var/lib/postgresql/data \
+  docker.io/library/postgres:15
+```
+
+Check running container:
+
+```bash
+podman ps
+```
+
+---
+
+### 5. Verify Database Creation
+
+Enter container:
+
+```bash
+podman exec -it postgres-hackathon psql -U postgres
+```
+
+List databases:
+
+```sql
+\l
+```
+
+Ensure `hackathon_db` is present.
+
+---
+
+## 🚀 Project Setup
+
+### 1. Install Dependencies
+
+```bash
 uv sync
+```
 
-# 3. Create the database
-createdb hackathon_db
+---
 
-# 4. Configure environment
-cp .env.example .env   # edit if your DB credentials differ
+### 2. Initialize Database Tables
 
-# 5. Run the server
+```bash
+uv run python -m scripts.init_db
+```
+
+---
+
+### 3. Load CSV Data
+
+```bash
+uv run python -m scripts.load_csv
+```
+
+---
+
+### 4. Run Application
+
+```bash
 uv run run.py
-
-# 6. Verify
-curl http://localhost:5000/health
-# → {"status":"ok"}
 ```
 
-## Project Structure
+---
 
-```
-mlh-pe-hackathon/
-├── app/
-│   ├── __init__.py          # App factory (create_app)
-│   ├── database.py          # DatabaseProxy, BaseModel, connection hooks
-│   ├── models/
-│   │   └── __init__.py      # Import your models here
-│   └── routes/
-│       └── __init__.py      # register_routes() — add blueprints here
-├── .env.example             # DB connection template
-├── .gitignore               # Python + uv gitignore
-├── .python-version          # Pin Python version for uv
-├── pyproject.toml           # Project metadata + dependencies
-├── run.py                   # Entry point: uv run run.py
-└── README.md
-```
+## 📊 Data Source
 
-## How to Add a Model
+- `products.csv` – Contains sample product data loaded into PostgreSQL.
 
-1. Create a file in `app/models/`, e.g. `app/models/product.py`:
+---
 
-```python
-from peewee import CharField, DecimalField, IntegerField
+## 🔍 Features
 
-from app.database import BaseModel
+- Automated DB setup using scripts
+- CSV data ingestion
+- Modular code structure (models, routes)
+- Containerized PostgreSQL setup
 
+---
 
-class Product(BaseModel):
-    name = CharField()
-    category = CharField()
-    price = DecimalField(decimal_places=2)
-    stock = IntegerField()
+## 🧪 Troubleshooting
+
+### PostgreSQL not starting
+
+```bash
+podman logs postgres-hackathon
 ```
 
-2. Import it in `app/models/__init__.py`:
+### Port already in use
 
-```python
-from app.models.product import Product
+```bash
+sudo lsof -i :5432
 ```
 
-3. Create the table (run once in a Python shell or a setup script):
+Kill process if needed.
 
-```python
-from app.database import db
-from app.models.product import Product
+### Reset database
 
-db.create_tables([Product])
+```bash
+podman rm -f postgres-hackathon
+podman volume rm postgres_data
 ```
 
-## How to Add Routes
+---
 
-1. Create a blueprint in `app/routes/`, e.g. `app/routes/products.py`:
+## 👨‍💻 Author
 
-```python
-from flask import Blueprint, jsonify
-from playhouse.shortcuts import model_to_dict
+**Pratik Bapat**
 
-from app.models.product import Product
+---
 
-products_bp = Blueprint("products", __name__)
+## 📄 License
 
-
-@products_bp.route("/products")
-def list_products():
-    products = Product.select()
-    return jsonify([model_to_dict(p) for p in products])
-```
-
-2. Register it in `app/routes/__init__.py`:
-
-```python
-def register_routes(app):
-    from app.routes.products import products_bp
-    app.register_blueprint(products_bp)
-```
-
-## How to Load CSV Data
-
-```python
-import csv
-from peewee import chunked
-from app.database import db
-from app.models.product import Product
-
-def load_csv(filepath):
-    with open(filepath, newline="") as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
-
-    with db.atomic():
-        for batch in chunked(rows, 100):
-            Product.insert_many(batch).execute()
-```
-
-## Useful Peewee Patterns
-
-```python
-from peewee import fn
-from playhouse.shortcuts import model_to_dict
-
-# Select all
-products = Product.select()
-
-# Filter
-cheap = Product.select().where(Product.price < 10)
-
-# Get by ID
-p = Product.get_by_id(1)
-
-# Create
-Product.create(name="Widget", category="Tools", price=9.99, stock=50)
-
-# Convert to dict (great for JSON responses)
-model_to_dict(p)
-
-# Aggregations
-avg_price = Product.select(fn.AVG(Product.price)).scalar()
-total = Product.select(fn.SUM(Product.stock)).scalar()
-
-# Group by
-from peewee import fn
-query = (Product
-         .select(Product.category, fn.COUNT(Product.id).alias("count"))
-         .group_by(Product.category))
-```
-
-## Tips
-
-- Use `model_to_dict` from `playhouse.shortcuts` to convert model instances to dictionaries for JSON responses.
-- Wrap bulk inserts in `db.atomic()` for transactional safety and performance.
-- The template uses `teardown_appcontext` for connection cleanup, so connections are closed even when requests fail.
-- Check `.env.example` for all available configuration options.
+This project is for educational and hackathon purposes.

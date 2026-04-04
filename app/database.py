@@ -1,30 +1,44 @@
-import os
-
-from peewee import DatabaseProxy, Model, PostgresqlDatabase
-
-db = DatabaseProxy()
+from peewee import Model, PostgresqlDatabase
+from peewee import DatabaseProxy
+from app.config import Config 
+db_proxy = DatabaseProxy()
 
 
 class BaseModel(Model):
     class Meta:
-        database = db
+        database = db_proxy
 
 
-def init_db(app):
-    database = PostgresqlDatabase(
-        os.environ.get("DATABASE_NAME", "hackathon_db"),
-        host=os.environ.get("DATABASE_HOST", "localhost"),
-        port=int(os.environ.get("DATABASE_PORT", 5432)),
-        user=os.environ.get("DATABASE_USER", "postgres"),
-        password=os.environ.get("DATABASE_PASSWORD", "postgres"),
+def init_db(config):
+    """
+    Core DB initialization (Reusable everywhere)
+    """
+    db = PostgresqlDatabase(
+        config.DB_NAME,
+        user=config.DB_USER,
+        password=config.DB_PASSWORD,
+        host=config.DB_HOST,
+        port=config.DB_PORT,
     )
-    db.initialize(database)
+
+    db_proxy.initialize(db)
+    return db
+
+
+def init_db_with_flask(app):
+    """
+    Flask-specific wrapper
+    """
+    db = init_db(Config)
 
     @app.before_request
-    def _db_connect():
-        db.connect(reuse_if_open=True)
+    def _connect():
+        if db.is_closed():
+            db.connect()
 
-    @app.teardown_appcontext
-    def _db_close(exc):
+    @app.teardown_request
+    def _close(exc):
         if not db.is_closed():
             db.close()
+
+    return db

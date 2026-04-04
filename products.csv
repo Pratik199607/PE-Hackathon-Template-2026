@@ -1,0 +1,21 @@
+name,category,price,stock
+Laptop,Electronics,55000.00,10
+Smartphone,Electronics,25000.00,25
+Headphones,Electronics,1500.50,50
+Keyboard,Accessories,800.00,40
+Mouse,Accessories,500.00,60
+Monitor,Electronics,12000.00,15
+Chair,Furniture,3500.75,20
+Table,Furniture,7000.00,12
+Notebook,Stationery,50.00,200
+Pen,Stationery,10.00,500
+Backpack,Accessories,1200.00,30
+Water Bottle,Home,300.00,80
+Shoes,Fashion,2500.00,18
+T-shirt,Fashion,700.00,45
+Watch,Fashion,5000.00,22
+Speaker,Electronics,2200.00,35
+Power Bank,Electronics,1500.00,27
+USB Cable,Accessories,200.00,100
+Desk Lamp,Home,900.00,25
+Gaming Mouse,Accessories,1800.00,14
