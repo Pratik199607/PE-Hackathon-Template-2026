@@ -50,9 +50,14 @@ uv run python -m scripts.load_csv
 - **Metrics Engine:** Real-time application telemetry is available at `/metrics`.
 
 **Run the App:**
-
+Create a tmux session and inside it run the app so that we can app runs in background and we can access it any time
 ```bash
+tmux new -s hackathon
 uv run run.py
+```
+See live logs again (Reattach):
+```bash
+tmux attach -t hackathon
 ```
 
 - **Verify Logs:** Check terminal output for JSON-formatted structured logs.
