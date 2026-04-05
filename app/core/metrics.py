@@ -4,7 +4,7 @@ import time
 
 # 🔥 Golden Signals
 REQUEST_COUNT = Counter(
-    "http_requests_total", "Total HTTP Requests", ["method", "endpoint"]
+    "http_requests_total", "Total HTTP Requests", ["method", "endpoint", "http_status"]
 )
 
 REQUEST_LATENCY = Histogram(

@@ -1,0 +1,25 @@
+groups:
+  - name: SilverTierAlerts
+    rules:
+      # Alert 1: Service Down (Wake up within 1-2 minutes)
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is DOWN"
+          description: "The App is unreachable."
+
+      # Alert 2: High Error Rate (The 5% Objective)
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{http_status=~"5.."}[2m])) 
+          / 
+          sum(rate(http_requests_total[2m])) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High Error Rate (>5%)"
+          description: "Errors are spiking on {{ $labels.endpoint }}."
