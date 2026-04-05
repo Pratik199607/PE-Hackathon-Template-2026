@@ -1,13 +1,12 @@
----
-
 # 🚨 MLH Hackathon: Incident Response & Observability
 
 This repository contains a containerized Python backend integrated with a full monitoring stack (**Prometheus, Grafana, Alertmanager**) designed for high-availability and rapid incident response.
 
 ## 🏗️ Tech Stack
-* **Backend:** Python 3.13 (FastAPI/Flask), PostgreSQL 15
-* **Infrastructure:** Podman (Container Engine), `uv` (Package Manager)
-* **Observability:** Prometheus (Metrics), Grafana (Dashboards), Alertmanager (Incident Alerting)
+
+- **Backend:** Python 3.13 (FastAPI/Flask), PostgreSQL 15
+- **Infrastructure:** Podman (Container Engine), `uv` (Package Manager)
+- **Observability:** Prometheus (Metrics), Grafana (Dashboards), Alertmanager (Incident Alerting)
 
 ---
 
@@ -107,11 +106,7 @@ podman run -d \
 
 1.  Login to `http://localhost:3000` (Default: admin/admin).
 2.  Add **Prometheus** (`http://localhost:9090`) as a Data Source.
-3.  Import/Create a dashboard to track the **Four Golden Signals**:
-    - **Latency:** Time taken to service requests.
-    - **Traffic:** Demand placed on the system (RPM).
-    - **Errors:** Rate of requests that fail (5xx).
-    - **Saturation:** Resource utilization (CPU/RAM).
+3.  Import/Create a dashboard to visualize metruics in Grafana
 
 ---
 
