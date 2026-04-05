@@ -1,199 +1,143 @@
-# 🚨 MLH Hackathon – Incident Response & Documentation
+---
 
-This repository contains a simple backend application setup for the **MLH Production Engineering Hackathon** challenge focused on **Incident Response & Documentation**.
+# 🚨 MLH Hackathon: Incident Response & Observability
 
-## 🛠️ Tech Stack
+This repository contains a containerized Python backend integrated with a full monitoring stack (**Prometheus, Grafana, Alertmanager**) designed for high-availability and rapid incident response.
 
-- Python 3.13
-- PostgreSQL 15
-- Podman (Container Engine)
-- uv (Python package manager)
+## 🏗️ Tech Stack
+* **Backend:** Python 3.13 (FastAPI/Flask), PostgreSQL 15
+* **Infrastructure:** Podman (Container Engine), `uv` (Package Manager)
+* **Observability:** Prometheus (Metrics), Grafana (Dashboards), Alertmanager (Incident Alerting)
 
 ---
 
-## 📂 Project Structure
+## 🛠️ Prerequisites & Infrastructure (Ubuntu)
 
-```
-.
-├── README.md
-├── app
-│   ├── config.py
-│   ├── database.py
-│   ├── models
-│   │   └── product.py
-│   └── routes
-│       └── products.py
-├── products.csv
-├── pyproject.toml
-├── run.py
-├── scripts
-│   ├── init_db.py
-│   └── load_csv.py
-└── uv.lock
-```
-
----
-
-## ⚙️ Prerequisites Setup
-
-### 1. Install `uv` (Python Package Manager)
+### 1. Tooling Setup
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Install uv (Python Package Manager)
+curl -LsSf https://astral.sh/uv/install.sh | sh && source ~/.bashrc
+
+# Install Podman
+sudo apt update && sudo apt install podman -y
 ```
 
-Reload shell:
+### 2. Database Setup
 
 ```bash
-source ~/.bashrc
-```
-
-Verify installation:
-
-```bash
-uv --version
-```
-
----
-
-### 2. Install Podman
-
-```bash
-sudo apt install podman -y
-```
-
-Verify:
-
-```bash
-podman --version
-```
-
----
-
-### 3. Pull PostgreSQL Image
-
-```bash
-podman pull docker.io/library/postgres:15
-```
-
-Verify images:
-
-```bash
-podman images
-```
-
----
-
-### 4. Run PostgreSQL Container
-
-```bash
-podman run -d \
-  --name postgres-hackathon \
+# Run PostgreSQL Container
+podman run -d --name postgres-hackathon \
+  -e POSTGRES_DB=hackathon_db \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=hackathon_db \
   -p 5432:5432 \
   -v postgres_data:/var/lib/postgresql/data \
-  docker.io/library/postgres:15
-```
+  docker.io/library/postgres:15-alpine
 
-Check running container:
-
-```bash
-podman ps
-```
-
----
-
-### 5. Verify Database Creation
-
-Enter container:
-
-```bash
-podman exec -it postgres-hackathon psql -U postgres
-```
-
-List databases:
-
-```sql
-\l
-```
-
-Ensure `hackathon_db` is present.
-
----
-
-## 🚀 Project Setup
-
-### 1. Install Dependencies
-
-```bash
+# Initialize App
 uv sync
-```
-
----
-
-### 2. Initialize Database Tables
-
-```bash
 uv run python -m scripts.init_db
-```
-
----
-
-### 3. Load CSV Data
-
-```bash
 uv run python -m scripts.load_csv
 ```
 
 ---
 
-### 4. Run Application
+## 🥉 Tier 1: Bronze (The Watchtower)
+
+**Objective:** Eliminate `print()` statements and expose system health.
+
+- **Structured Logging:** All logs are emitted in **JSON format** for machine readability (located in `app/core/logger.py`).
+- **Metrics Engine:** Real-time application telemetry is available at `/metrics`.
+
+**Run the App:**
 
 ```bash
 uv run run.py
 ```
 
----
-
-## 📊 Data Source
-
-- `products.csv` – Contains sample product data loaded into PostgreSQL.
+- **Verify Logs:** Check terminal output for JSON-formatted structured logs.
+- **Verify Metrics:** `curl -s http://localhost:5000/metrics`
 
 ---
 
-## 🔍 Features
+## 🥈 Tier 2: Silver (The Alarm)
 
-- Automated DB setup using scripts
-- CSV data ingestion
-- Modular code structure (models, routes)
-- Containerized PostgreSQL setup
+**Objective:** Automate failure detection and notify engineers via Discord.
+
+### 1. Start Alerting Stack
+
+```bash
+# Launch Alertmanager
+podman run -d --name alertmanager \
+  -p 9093:9093 \
+  -v $(pwd)/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml \
+  docker.io/prom/alertmanager:latest
+
+# Launch Prometheus
+podman run -d --name prometheus \
+  -p 9090:9090 \
+  -v $(pwd)/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml \
+  -v $(pwd)/monitoring/alerts.yml:/etc/prometheus/alerts.yml \
+  docker.io/prom/prometheus:latest
+```
+
+### 2. The Fire Drill
+
+To verify the setup, stop the application or simulate a high error rate. If the service stays down for >5 minutes, a notification will fire via the **Discord Webhook** configured in `monitoring/alertmanager.yml`.
 
 ---
 
-## 🧪 Troubleshooting
+## 🥇 Tier 3: Gold (The Command Center)
 
-### PostgreSQL not starting
+**Objective:** Full situational awareness through visualization.
 
-```bash
-podman logs postgres-hackathon
-```
-
-### Port already in use
+### 1. Launch Grafana
 
 ```bash
-sudo lsof -i :5432
+mkdir -p grafana-data
+podman run -d \
+  --name grafana \
+  -p 3000:3000 \
+  -v $(pwd)/grafana-data:/var/lib/grafana \
+  docker.io/grafana/grafana:latest
 ```
 
-Kill process if needed.
+### 2. Dashboard Configuration
 
-### Reset database
+1.  Login to `http://localhost:3000` (Default: admin/admin).
+2.  Add **Prometheus** (`http://localhost:9090`) as a Data Source.
+3.  Import/Create a dashboard to track the **Four Golden Signals**:
+    - **Latency:** Time taken to service requests.
+    - **Traffic:** Demand placed on the system (RPM).
+    - **Errors:** Rate of requests that fail (5xx).
+    - **Saturation:** Resource utilization (CPU/RAM).
 
-```bash
-podman rm -f postgres-hackathon
-podman volume rm postgres_data
+---
+
+## 📂 Project Structure
+
+```text
+.
+├── app
+│   ├── core           # Logger & Metrics logic
+│   ├── models         # DB Schema
+│   └── routes         # API Endpoints (/products, /health)
+├── monitoring         # Config for Prometheus & Alertmanager
+├── scripts            # DB Setup & Data Ingestion
+├── run.py             # Entry point
+└── products.csv       # Seed data
 ```
+
+## 🔍 API Endpoints
+
+| Method   | Endpoint         | Description              |
+| :------- | :--------------- | :----------------------- |
+| **GET**  | `/products`      | List all products        |
+| **GET**  | `/products/<id>` | Get product by ID        |
+| **POST** | `/products`      | Add new product          |
+| **GET**  | `/health`        | Application health check |
+| **GET**  | `/metrics`       | Prometheus metrics       |
 
 ---
 
