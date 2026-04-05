@@ -1,0 +1,23 @@
+route:
+  receiver: "discord-webhook"
+  group_wait: 10s
+  repeat_interval: 1h
+
+receivers:
+  - name: "discord-webhook"
+    discord_configs:
+      - webhook_url: ""
+        send_resolved: true
+        content: |
+          🚨 **Alert Notification**
+
+        title: '{{ template "discord.default.title" . }}'
+
+        message: |
+          {{ range .Alerts }}
+          **Alert:** {{ .Labels.alertname }}
+          **Severity:** {{ .Labels.severity }}
+          **Instance:** {{ .Labels.instance }}
+          **Summary:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          {{ end }}

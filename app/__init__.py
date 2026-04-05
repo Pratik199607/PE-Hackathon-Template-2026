@@ -1,4 +1,4 @@
-from flask import Flask, request, Response
+from flask import Flask, request, abort, Response
 from dotenv import load_dotenv
 import time
 import logging
@@ -38,13 +38,17 @@ def create_app():
     def log_request(response):
         latency = time.time() - request.start_time
 
+        # Groups /products/1 and /products/99 into /products/<id>
+        endpoint = str(request.url_rule) if request.url_rule else request.path
+
         REQUEST_COUNT.labels(
             method=request.method,
-            endpoint=request.path
+            endpoint=endpoint,
+            http_status=response.status_code
         ).inc()
 
         REQUEST_LATENCY.labels(
-            endpoint=request.path
+            endpoint=endpoint
         ).observe(latency)
 
         if response.status_code >= 400:
@@ -65,5 +69,10 @@ def create_app():
     @app.route("/metrics")
     def metrics():
         return Response(metrics_response(), mimetype="text/plain")
+
+    # ✅ Error Endpoint
+    @app.route("/error")
+    def error():
+        abort(500)
 
     return app
