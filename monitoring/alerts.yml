@@ -1,7 +1,9 @@
 groups:
-  - name: SilverTierAlerts
+  - name: GoldTierAlerts
     rules:
-      # Alert 1: Service Down (Wake up within 1-2 minutes)
+      # Alert 1: Service Down (Wake up immediately 🚨)
+      # Objective: Detect complete outage within 1 minute
+      # Why: If this fires, users cannot access the service at all
       - alert: ServiceDown
         expr: up == 0
         for: 1m
@@ -9,9 +11,12 @@ groups:
           severity: critical
         annotations:
           summary: "Service is DOWN"
-          description: "The App is unreachable."
+          description: "The application is unreachable. Immediate action required."
 
       # Alert 2: High Error Rate (The 5% Objective)
+      # Objective: Ensure error rate stays below 5%
+      # Why: Even if service is up, users may be facing failures
+      # Logic: (5xx errors / total requests) > 5%
       - alert: HighErrorRate
         expr: |
           sum(rate(http_requests_total{http_status=~"5.."}[2m])) 
@@ -22,4 +27,57 @@ groups:
           severity: critical
         annotations:
           summary: "High Error Rate (>5%)"
-          description: "Errors are spiking on {{ $labels.endpoint }}."
+          description: "More than 5% of requests are failing."
+
+      # Alert 3: High Latency (User Experience Alert)
+      # Objective: Detect slow responses before users complain
+      # Why: System may be up but still unusable due to slowness
+      # Logic: 95th percentile latency > 1 second
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[2m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Latency (p95 > 1s)"
+          description: "Users are experiencing slow responses."
+
+      # Alert 4: High CPU Usage (Saturation Signal)
+      # Objective: Detect CPU bottlenecks
+      # Why: High CPU leads to slow performance and eventual failures
+      # Threshold: CPU usage > 80%
+      - alert: HighCPUUsage
+        expr: cpu_usage_percent > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU Usage"
+          description: "CPU usage is above 80%, possible overload."
+
+      # Alert 5: High Memory Usage (Resource Exhaustion)
+      # Objective: Prevent memory exhaustion crashes
+      # Why: High memory can lead to OOM kills or degraded performance
+      # Threshold: Memory usage > 80%
+      - alert: HighMemoryUsage
+        expr: memory_usage_percent > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory Usage"
+          description: "Memory usage is above 80%."
+
+      # Alert 6: High In-Progress Requests (Advanced Saturation)
+      # Objective: Detect request backlog / overload
+      # Why: Too many concurrent requests = system under pressure
+      # Threshold: More than 50 active requests
+      - alert: HighInProgressRequests
+        expr: http_requests_in_progress > 50
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many in-progress requests"
+          description: "System is handling too many concurrent requests."

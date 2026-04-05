@@ -13,6 +13,7 @@ from app.core.metrics import (
     REQUEST_COUNT,
     REQUEST_LATENCY,
     ERROR_COUNT,
+    IN_PROGRESS,
     metrics_response,
 )
 
@@ -33,6 +34,7 @@ def create_app():
     @app.before_request
     def start_timer():
         request.start_time = time.time()
+        IN_PROGRESS.inc()  
 
     @app.after_request
     def log_request(response):
@@ -48,11 +50,18 @@ def create_app():
         ).inc()
 
         REQUEST_LATENCY.labels(
+            method=request.method,
             endpoint=endpoint
         ).observe(latency)
 
         if response.status_code >= 400:
-            ERROR_COUNT.labels(endpoint=request.path).inc()
+            ERROR_COUNT.labels(
+                method=request.method,
+                endpoint=endpoint,
+                http_status=response.status_code
+            ).inc()
+
+        IN_PROGRESS.dec()
 
         logger.info(
             f"{request.method} {request.path} {response.status_code} {latency:.3f}s"
